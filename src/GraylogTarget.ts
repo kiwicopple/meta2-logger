@@ -8,6 +8,7 @@
 
 import * as util from "util";
 import Gelf = require("gelf");
+import axios from 'axios'
 
 import {LOG_LEVEL, ILoggerTarget, ILoggerMetaData} from "./interfaces";
 import {BaseTarget, IBaseTargetOptions} from "./BaseTarget";
@@ -45,7 +46,10 @@ export interface IGraylogTargetOptions extends IBaseTargetOptions {
 	debugGelfClient?: boolean;
 
 	/** Additional static message fields */
-	additionalFields?: { [K: string]: string|number };
+  additionalFields?: { [K: string]: string|number };
+  
+	/** Transport type: 'GELF' or 'TCP', default 'GELF' */
+  transport?: string;
 }
 
 /**
@@ -55,6 +59,9 @@ export class GraylogTarget extends BaseTarget {
 
 	protected version: string;
 	protected host: string;
+	protected transport: string;
+	protected graylogHostname: string;
+	protected graylogPort: number;
 	protected facilityPrefix: string;
 	protected additionalFields: { [K: string]: string|number };
 
@@ -82,6 +89,7 @@ export class GraylogTarget extends BaseTarget {
 	 * 	host: "myApp",
 	 * 	facilityPrefix: "myAppPrefix_",
 	 * 	version: "1.0",
+	 * 	transport: "GELF",
 	 * 	additionalFields: {
 	 * 		myField: "myValue"
 	 * 	},
@@ -108,8 +116,11 @@ export class GraylogTarget extends BaseTarget {
 		// Assign config
 		this.version = options.version || "1.0";
 		this.host = options.host || "_unspecified_";
+		this.transport = options.transport || "GELF";
+    this.graylogPort = options.graylogPort || 12201;
+    this.graylogHostname = options.graylogHostname;
 		this.facilityPrefix = options.facilityPrefix || "";
-		this.additionalFields = options.additionalFields || {};
+    this.additionalFields = options.additionalFields || {};
 
 		this.debug = options.debugGelfClient || false;
 
@@ -124,14 +135,16 @@ export class GraylogTarget extends BaseTarget {
 		if (this.debug)
 			console.log("GrayLog connection opts:", connOpts);
 
-		this.gelf = new Gelf(connOpts);
-
-		this.gelf.on("error", (err) => {
-
-			if (this.debug)
-				console.error("Failed to sent GrayLog message:", err);
-
-		});
+    if (this.transport === "GELF") {
+      this.gelf = new Gelf(connOpts);
+  
+      this.gelf.on("error", (err) => {
+  
+        if (this.debug)
+          console.error("Failed to sent GrayLog message:", err);
+  
+      });
+    }
 
 	}
 
@@ -187,9 +200,8 @@ export class GraylogTarget extends BaseTarget {
 	 * @param msg Formated message parts
 	 */
 	protected send(payload) {
-
-		this.gelf.emit("gelf.log", payload);
-
+    if (this.transport === "GELF") this.gelf.emit("gelf.log", payload);
+    else axios.post(`${this.graylogHostname}:${this.graylogPort}/gelf`, payload)
 	}
 
 	/**

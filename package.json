@@ -30,8 +30,10 @@
   },
   "homepage": "https://github.com/metaplatform/meta2-logger",
   "dependencies": {
+    "axios": "^0.18.0",
     "colors": "^1.1.0",
-    "gelf": "^2.0.0"
+    "gelf": "^2.0.0",
+    "test-console": "^1.1.0"
   },
   "devDependencies": {
     "@types/jest": "^22.0.1",

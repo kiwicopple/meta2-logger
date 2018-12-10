@@ -410,6 +410,9 @@ logger.toGrayLog({
 	// Facilities - null to accept all facilities
 	facilities: [ "http", "broker", "etc" ],
 
+	// GELF or TCP (use TCP for browsers)
+	transport: 'GELF',
+
 	// GrayLog server port
 	graylogPort: 12201,
 
